@@ -1,0 +1,7 @@
+{
+  "name": "hyeseong-ppt",
+  "description": "핵심 메시지·후킹 제목·슬라이드 구성을 인터뷰로 받아 설득 구조로 펼치는 단일 HTML 발표 덱 스킬 (기본 스타일 airbnb, 모바일 스와이프)",
+  "version": "1.0.0",
+  "author": { "name": "songbly-dev" },
+  "keywords": ["presentation", "slides", "deck", "korean", "ppt", "airbnb"]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "hyeseong-ppt",
+  "owner": { "name": "songbly-dev" },
+  "plugins": [
+    {
+      "name": "hyeseong-ppt",
+      "source": "./",
+      "description": "인터뷰로 받아 설득 구조로 펼치는 단일 HTML 발표 덱 — 기본 스타일 airbnb"
+    }
+  ]
+}

@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="{한 줄 설명}">
+<title>{덱 제목}</title>
+<style>
+/* ─────────────────────────────────────────────
+   소프트 덱(Airbnb 풍) — design-spec.md 기준
+   규칙: 흰 캔버스 · 둥근 면 · Rausch 한 점 (Rausch 면은 한 장에 하나)
+   제목은 후킹하지 않는다 — 한 줄 명사구로 그 장의 내용을 그대로 부른다
+   ───────────────────────────────────────────── */
+
+/* 1. 토큰 ------------------------------------------------ */
+:root{
+  --rausch:#ff385c; --rausch-active:#e00b41; --rausch-soft:#ffd1da;
+  --ink:#222222;    --body:#3f3f3f;   --muted:#6a6a6a;  --muted-soft:#929292;
+  --line:#dddddd;   --line-soft:#ebebeb; --line-strong:#c1c1c1;
+  --paper:#ffffff;  --soft:#f7f7f7;   --strong:#f2f2f2;
+  --r-sm:8px; --r-md:14px; --r-lg:20px; --r-full:9999px;
+  --lift:rgba(0,0,0,.02) 0 0 0 1px,rgba(0,0,0,.04) 0 2px 6px 0,rgba(0,0,0,.1) 0 4px 8px 0;  /* 그림자는 이 한 단뿐 */
+  --on-ink:#b0b0b0; --prompt-bg:#222222;
+  --sans:"Airbnb Cereal VF",Circular,Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  --zoom:1;        /* 강의 중 [ ] 키로 바뀌는 배율 — 손으로 고치지 않는다 */
+}
+
+/* 2. 바탕 ------------------------------------------------ */
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;
+  background:var(--paper);color:var(--ink);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  word-break:keep-all;overflow-wrap:normal;line-break:strict}
+
+/* 3. 덱 골격 — 상단 내비처럼 헤어라인 한 줄로 나눈다 ------ */
+.deck{height:100%;min-height:640px;padding:0 4.5vw 18px;
+  display:grid;grid-template-rows:auto 1fr auto;background:var(--paper)}
+header,footer{display:flex;align-items:center;justify-content:space-between}
+header{height:72px;margin:0 -4.5vw;padding:0 4.5vw;border-bottom:1px solid var(--line-soft)}
+.brand{color:var(--rausch);font-size:18px;font-weight:800;letter-spacing:-.02em}
+.count{padding:8px 14px;border:1px solid var(--line);border-radius:var(--r-full);box-shadow:var(--lift);
+  font:600 13px/1 var(--sans);font-variant-numeric:tabular-nums;color:var(--ink)}
+.count #total{color:var(--muted)}
+footer{gap:18px;padding-top:14px}
+.progress{height:4px;flex:1;background:var(--line-soft);border-radius:var(--r-full);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--ink);border-radius:inherit;transition:width .3s}
+.hint{font-size:12px;color:var(--muted-soft)}
+.nav{display:flex;gap:8px}
+.nav button{display:grid;place-items:center;width:40px;height:40px;border:1px solid var(--line);
+  border-radius:50%;background:#fff;color:var(--ink);font-size:17px;cursor:pointer}
+.nav button:hover{box-shadow:var(--lift)}
+.nav button:disabled{opacity:.3;cursor:default;box-shadow:none}
+
+/* 4. 슬라이드 -------------------------------------------- */
+.slide{display:none;margin:auto;align-items:center;gap:5vw;
+  width:min(1280px,calc(100% / var(--zoom,1)))}   /* 배율만큼 좁게 잡아 키우면 폭은 그대로 찬다 */
+.slide.active{display:grid;animation:enter .35s ease-out;
+  transform:scale(var(--zoom,1));transform-origin:center center}
+.one{grid-template-columns:1fr}
+.two{grid-template-columns:.9fr 1.1fr}
+@keyframes enter{from{opacity:0;transform:translateY(10px) scale(var(--zoom,1))}
+                 to{opacity:1;transform:scale(var(--zoom,1))}}
+
+/* 5. 글 — 굵기는 700 까지. 무게는 여백과 면이 든다 ------- */
+.copy{max-width:800px}
+.kicker{margin:0 0 16px;color:var(--muted);font-size:14px;font-weight:600}
+.slide h1,.slide h2{margin:0;font-weight:700;letter-spacing:-.03em}
+.slide h1{font-size:clamp(40px,4.4vw,62px);line-height:1.14}
+.slide h2{font-size:clamp(32px,3.6vw,50px);line-height:1.18}
+.slide h3{margin:0;font-size:21px;font-weight:600;letter-spacing:-.01em}
+.dense h1{font-size:clamp(32px,2.9vw,42px)}          /* 도해가 클 때 */
+.body{max-width:740px;margin:20px 0 0;font-size:19px;line-height:1.6;color:var(--muted)}
+.accent{color:var(--rausch)}                         /* 제목 크기에서만 — 작은 글씨엔 대비가 모자란다 */
+.nowrap{white-space:nowrap}
+.title{grid-template-columns:1fr}
+.title .copy{max-width:1100px}
+.title h1{font-size:clamp(46px,5.4vw,76px);line-height:1.1}
+.title .body{font-size:22px}
+.close{margin-top:24px;font-size:21px;font-weight:700;line-height:1.75}
+.close span{padding-bottom:2px;border-bottom:3px solid var(--rausch)}
+.link{display:inline-block;margin-top:18px;color:var(--ink);font-size:15px;font-weight:600;
+  text-decoration:underline;text-underline-offset:3px}
+
+/* 6. 컴포넌트 -------------------------------------------- */
+/* 표지 검색바 — 어디서 · 언제 · 누가 + Rausch 오브 */
+.search{display:inline-flex;align-items:center;margin-top:40px;padding:8px 8px 8px 0;background:#fff;
+  border:1px solid var(--line);border-radius:var(--r-full);box-shadow:var(--lift)}
+.search>div{padding:6px 28px;border-left:1px solid var(--line)}
+.search>div:first-child{border-left:0}
+.search small{display:block;font-size:12px;font-weight:700;color:var(--ink)}
+.search p{margin:3px 0 0;font-size:15px;color:var(--muted)}
+.orb{flex:none;display:grid;place-items:center;width:48px;height:48px;margin-left:4px;
+  border-radius:50%;background:var(--rausch)}
+.orb svg{width:16px;height:16px}
+
+/* 카드 — 14px 둥근 면 + 헤어라인 */
+.card{padding:24px;background:#fff;border:1px solid var(--line);border-radius:var(--r-md)}
+.card h3{margin:0 0 14px}
+.card p{margin:0;font-size:15px;line-height:1.6;color:var(--muted)}
+.card.pick{border:2px solid var(--ink);padding:23px}   /* 고르는 쪽 — 포커스된 입력칸처럼 2px 잉크 */
+.card.top{border:0;box-shadow:var(--lift)}            /* 사진 먼저인 숙소 카드 */
+.plate{position:relative;display:grid;place-items:center;height:128px;margin:-8px -8px 20px;
+  background:var(--soft);border-radius:10px}
+.plate .num{margin:0;font-size:48px;font-weight:700;letter-spacing:-.03em;color:var(--ink)}
+.plate .badge{position:absolute;top:10px;left:10px}
+.badge{display:inline-block;padding:5px 11px;background:#fff;border-radius:var(--r-full);
+  box-shadow:var(--lift);font-size:12px;font-weight:600;color:var(--ink)}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.trio .card,.duo .card{min-height:230px}
+
+/* 결론 밴드 */
+.band{margin-top:16px;padding:18px 24px;background:var(--ink);color:#fff;border-radius:var(--r-md);
+  display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:16px}
+.band b{color:var(--rausch);font-size:26px;font-weight:700}
+.band.rausch{background:var(--rausch);display:block;text-align:center;font-size:19px;font-weight:700}
+.band.full{grid-column:1/-1;margin-top:0;display:block;text-align:center;font-size:17px}
+
+/* 흐름 — 검색바처럼 한 알약 안에 칸을 나누고, 결론 칸만 Rausch */
+.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:4px;align-items:center;padding:8px;
+  background:#fff;border:1px solid var(--line);border-radius:var(--r-full);box-shadow:var(--lift)}
+.flow span,.flow strong{padding:14px 16px;text-align:center;font-size:15px;font-weight:600;
+  border-radius:var(--r-full)}
+.flow strong{background:var(--rausch);color:#fff}
+.flow i{font-style:normal;color:var(--line-strong)}
+
+/* 번호 단계 — 날짜 선택 칸처럼 잉크 원 */
+.steps{padding:8px 24px;background:#fff;border:1px solid var(--line);border-radius:var(--r-md)}
+.steps>div{display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:center;
+  padding:16px 0;border-top:1px solid var(--line-soft)}
+.steps>div:first-child{border-top:0}
+.steps b{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;
+  background:var(--ink);color:#fff;font-size:14px;font-weight:600}
+.steps strong{display:block;font-size:17px;font-weight:600}
+.steps span{display:block;margin-top:4px;color:var(--muted);font-size:14px}
+
+/* 프롬프트 */
+.prompt{padding:26px 28px;background:var(--prompt-bg);color:#ebebeb;border-radius:var(--r-md);
+  font:500 16px/1.75 ui-monospace,SFMono-Regular,Menlo,monospace}
+.prompt .skill{display:inline-block;margin-bottom:14px;padding:4px 12px;border-radius:var(--r-full);
+  background:var(--rausch);color:#fff;font:600 12px/1.5 var(--sans)}
+.prompt strong{display:block;color:#fff}
+.prompt small{display:block;margin-top:14px;color:var(--on-ink);font:500 13px/1.6 var(--sans)}
+
+/* 값 나열 — 편의시설 목록처럼 헤어라인 행 */
+.pairs{display:grid;margin-top:14px}
+.pairs div{display:flex;justify-content:space-between;gap:8px;padding:10px 0;
+  border-top:1px solid var(--line-soft);font-size:14px}
+.pairs span{color:var(--muted)}
+.pairs code{font:600 14px var(--sans);color:var(--ink)}
+
+/* 숫자 히어로 — 평점 표시처럼 숫자는 잉크 */
+.hero{padding:32px;background:#fff;border-radius:var(--r-lg);box-shadow:var(--lift)}
+.stat{display:flex;align-items:center;gap:22px;line-height:1}
+.stat span{font-size:64px;font-weight:600;letter-spacing:-.02em;color:var(--muted-soft)}
+.stat i{font-style:normal;font-size:34px;color:var(--line-strong)}
+.stat strong{font-size:104px;font-weight:700;letter-spacing:-.03em;color:var(--ink)}
+.hero>p{margin:12px 0 24px;font-size:17px;font-weight:600}
+.breakdown{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.breakdown span{padding:12px 6px;background:var(--soft);border-radius:var(--r-sm);
+  text-align:center;font-size:13px;font-weight:600}
+
+/* 스크린샷 — 사진은 둥글게 잘라 먼저 보인다 */
+.shot{height:min(55vh,540px);overflow:hidden;background:var(--soft);border-radius:var(--r-lg);box-shadow:var(--lift)}
+.shot img{width:100%;height:100%;object-fit:cover;object-position:top left}
+.frame{margin:0}
+.frame img{display:block;width:100%;height:clamp(150px,22vh,250px);object-fit:cover;object-position:top left;
+  background:var(--soft);border-radius:var(--r-md)}
+.frame figcaption{padding:10px 2px 0;color:var(--ink);font-size:14px;font-weight:600}
+.fade{opacity:.52;filter:grayscale(.45) saturate(.55)}   /* before 는 죽인다 */
+
+/* 벤다이어그램 — 원은 SVG, 글자는 그 위에 얹은 HTML(편집 가능) */
+.venn{position:relative;max-width:660px;margin:0 auto}
+.venn svg{display:block;width:100%;height:auto}
+.venn p{position:absolute;top:50%;margin:0;transform:translate(-50%,-50%);text-align:center}
+.venn .v-l{left:25.8%;width:19%}
+.venn .v-c{left:50%;width:25%}
+.venn .v-r{left:74.2%;width:19%}
+.venn p b{display:block;margin-bottom:7px;font-size:18px;font-weight:700;letter-spacing:-.02em}
+.venn p span{display:block;font-size:13px;line-height:1.55;color:var(--muted)}
+.venn .v-c span{color:var(--body)}
+
+/* 예시 UI — Rausch 버튼도 한 장의 Rausch 면 하나로 친다 */
+.ui-btn{display:inline-block;padding:14px 24px;border:0;border-radius:var(--r-sm);
+  background:var(--rausch);color:#fff;font-weight:600}
+.ui-bar{height:8px;margin-top:24px;background:var(--line-soft);border-radius:var(--r-full);overflow:hidden}
+.ui-bar i{display:block;width:72%;height:100%;background:var(--ink)}
+
+/* 7. 반응형 --------------------------------------------- */
+@media(max-width:900px){
+  .deck{height:100dvh;min-height:0;padding:0 20px 16px;grid-template-rows:auto minmax(0,1fr) auto}
+  header{margin:0 -20px;padding:0 20px}
+  .slide.active{grid-template-columns:1fr;gap:24px;align-self:stretch;align-content:start;
+    margin:0 auto;padding:12px 0 24px;overflow-y:auto;-webkit-overflow-scrolling:touch}  /* 긴 장은 슬라이드 안에서 세로 스크롤 */
+  .slide h1{font-size:40px}
+  .title h1{font-size:46px}
+  .shot{height:380px}
+  .frame img{height:210px}
+}
+@media(max-width:600px){
+  .title h1,.slide h1{font-size:32px}
+  .slide h2{font-size:29px}
+  .trio,.duo,.flow{grid-template-columns:1fr}
+  .flow{border-radius:var(--r-lg)}
+  .breakdown{grid-template-columns:1fr 1fr}
+  .flow i,.hint{display:none}
+  .nowrap{white-space:normal}
+  .band.full{grid-column:auto}
+  .stat span{font-size:44px}
+  .stat strong{font-size:64px}
+  .frame img{height:160px}
+  .search{display:grid;padding:6px 0;border-radius:var(--r-lg)}
+  .search>div{padding:10px 20px;border-left:0;border-top:1px solid var(--line)}
+  .search>div:first-child{border-top:0}
+  .orb{display:none}
+}
+
+/* 8. 인라인 편집 ---------------------------------------- */
+.tools{display:flex;gap:6px}
+.edit-btn{padding:9px 14px;border:1px solid var(--ink);border-radius:var(--r-sm);background:#fff;
+  color:var(--ink);font:600 12px/1 var(--sans);cursor:pointer}
+.edit-btn.on{background:var(--ink);color:#fff}
+.edit-note{align-self:center;max-width:300px;font:500 12px/1.4 var(--sans);color:var(--muted)}
+.editing [data-edit]{cursor:text}
+.editing [data-edit]:hover{box-shadow:inset 0 0 0 1px var(--rausch-soft)}
+.editing [data-edit]:focus{outline:2px solid var(--rausch);outline-offset:3px;box-shadow:none}
+@media(max-width:600px){
+  .venn p{position:static;width:auto;transform:none;text-align:left;
+    padding:10px 0;border-top:1px solid var(--line)}
+  .tools .edit-btn:not(#edit){display:none}
+}
+</style>
+</head>
+<body>
+<main class="deck">
+
+<header>
+  <div class="brand">{brand — 영문 소문자 한 단어}</div>
+  <div class="count"><span id="current">01</span> / <span id="total">09</span></div>
+</header>
+
+<!-- 01 표지 ------------------------------------------------ -->
+<section class="slide active title">
+  <div class="copy">
+    <h1>{강의 이름} <span class="accent">{핵심 명사}</span></h1>
+    <p class="body">{한 줄 부제}</p>
+    <div class="search">                                   <!-- 정보가 없으면 이 div 를 통째로 지운다 -->
+      <div><small>어디서</small><p>{장소·행사}</p></div>
+      <div><small>언제</small><p>{날짜}</p></div>
+      <div><small>누가</small><p>{발표자}</p></div>
+      <span class="orb" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg></span>
+    </div>
+  </div>
+</section>
+
+<!-- 02 상황 ------------------------------------------------ -->
+<section class="slide two dense">
+  <div class="copy">
+    <h1>지금 겪는 <span class="accent">{불편의 이름}</span></h1>
+    <p class="body">{제목을 풀어 주는 한 문장.}</p>
+  </div>
+  <div class="card">
+    <div class="band" style="margin:0 0 16px;display:block">
+      <small style="display:block;margin-bottom:8px;font-size:12px;color:var(--on-ink)">요청사항</small>
+      <p style="margin:0;font-size:20px">“{들어오는 요청 한 줄}”</p>
+    </div>
+    <p style="margin:0;font-size:12px;font-weight:700;color:var(--muted)">내가 해야 할 일</p>
+    <div class="steps" style="padding:0;border:0;margin-top:6px">
+      <div><b>01</b><div><strong>{할 일 1}</strong></div></div>
+      <div><b>02</b><div><strong>{할 일 2}</strong></div></div>
+      <div><b>03</b><div><strong>{할 일 3}</strong></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 대조 (A/B) ------------------------------------------ -->
+<section class="slide two dense">
+  <div class="copy">
+    <h1>{A}와 {B}의 <span class="accent">차이</span></h1>
+    <p class="body">{겉모습이 같아도 구조가 다르다는 한 문장.}</p>
+  </div>
+  <div class="duo">
+    <div class="card" style="min-height:0">
+      <small style="display:block;color:var(--muted);font-weight:700">A</small>
+      <p style="margin:6px 0 12px;font-size:15px;font-weight:600;color:var(--ink)">{A의 구조}</p>
+      <div class="pairs"><div><span>{항목}</span><code>{값}</code></div><div><span>{항목}</span><code>{값}</code></div></div>
+      <p style="margin:14px 0 0;font-size:14px;font-weight:600">{A의 수정 비용}</p>
+    </div>
+    <div class="card pick" style="min-height:0">
+      <small class="badge" style="margin-bottom:10px">{고를 쪽 표시}</small>
+      <p style="margin:0 0 12px;font-size:15px;font-weight:600;color:var(--ink)">{B의 구조}</p>
+      <div class="pairs"><div><span>{공통 규칙}</span><code>{값}</code></div></div>
+      <p style="margin:14px 0 0;font-size:14px;font-weight:700;color:var(--ink)">{B의 수정 비용}</p>
+    </div>
+    <div class="band full">{한 줄로 못 박는 문장.}</div>
+  </div>
+</section>
+
+<!-- 04 확대 ------------------------------------------------ -->
+<section class="slide one">
+  <div class="copy">
+    <h2>{규모}에 따른 <span class="accent">{비용 변화}</span></h2>
+    <p class="body">{왜 지금 다뤄야 하는지 한 문장.}</p>
+  </div>
+  <div>
+    <div class="flow">
+      <span>{1단계}</span><i>→</i><span>{2단계}</span><i>→</i><strong>{3단계 — 결과}</strong>
+    </div>
+    <div class="band" style="display:block;text-align:center">{판단 기준을 한 줄로.}</div>
+  </div>
+</section>
+
+<!-- 05 해부 (구성요소 3개) --------------------------------- -->
+<section class="slide one">
+  <div class="copy">
+    <h2>{대상}의 <span class="accent">세 가지 구성요소</span></h2>
+    <p class="body">{범위를 좁히는 한 문장.}</p>
+  </div>
+  <div>
+    <div class="trio">
+      <div class="card top">
+        <div class="plate"><small class="badge">{꼬리표 — 선택}</small><p class="num">01</p></div>
+        <h3>{이름}</h3>
+        <p>{설명 한 줄}<br><b style="color:var(--ink);font-size:14px">{핵심 문장}</b></p>
+        <div class="pairs"><div><span>{항목}</span><code>{값}</code></div><div><span>{항목}</span><code>{값}</code></div></div>
+      </div>
+      <div class="card top">
+        <div class="plate"><p class="num">02</p></div>
+        <h3>{이름}</h3>
+        <p>{설명 한 줄}<br><b style="color:var(--ink);font-size:14px">{예시}</b></p>
+        <div style="margin-top:22px"><span class="ui-btn">{예시 버튼}</span></div>
+      </div>
+      <div class="card top">
+        <div class="plate"><p class="num">03</p></div>
+        <h3>{이름}</h3>
+        <p>{설명 한 줄}<br><b style="color:var(--ink);font-size:14px">{예시}</b></p>
+        <div class="pairs"><div><span>{항목}</span><code>{값}</code></div><div><span>{항목}</span><code>{값}</code></div></div>
+      </div>
+    </div>
+    <p style="margin-top:20px;font-size:16px;font-weight:600;text-align:center">{셋을 잇는 한 줄} → {한 줄} → {한 줄}</p>
+  </div>
+</section>
+
+<!-- 06 절차 ------------------------------------------------ -->
+<section class="slide two dense">
+  <div class="copy">
+    <h1>{작업}의 <span class="accent">절차</span></h1>
+    <p class="body">{근거를 밝히는 한 문장.}</p>
+  </div>
+  <div>
+    <div class="steps">
+      <div><b>01</b><div><strong>{단계 이름}</strong><span>{한 줄 설명}</span></div></div>
+      <div><b>02</b><div><strong>{단계 이름}</strong><span>{한 줄 설명}</span></div></div>
+      <div><b>03</b><div><strong>{단계 이름}</strong><span>{한 줄 설명}</span></div></div>
+    </div>
+    <div class="band rausch">{이 절차가 뜻하는 바 한 줄.}</div>
+  </div>
+</section>
+
+<!-- 07 실행 (프롬프트) ------------------------------------- -->
+<section class="slide two dense">
+  <div class="copy">
+    <h1>실제 <span class="accent">동작 예시</span></h1>
+    <p class="body">{도구가 실제로 한 일 한 문장.}</p>
+    <a class="link" href="{출처 URL}" target="_blank">{출처 이름} ↗</a>
+  </div>
+  <div>
+    <div class="flow" style="margin-bottom:14px">
+      <span><b style="display:inline-grid;place-items:center;width:22px;height:22px;margin-right:6px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px">1</b>{단계}</span><i>→</i>
+      <span><b style="display:inline-grid;place-items:center;width:22px;height:22px;margin-right:6px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px">2</b>{단계}</span><i>→</i>
+      <span><b style="display:inline-grid;place-items:center;width:22px;height:22px;margin-right:6px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px">3</b>{단계}</span>
+    </div>
+    <div class="prompt">
+      <span class="skill">{USE SKILL NAME}</span>
+      <strong>{수강생이 그대로 칠 프롬프트 본문.}</strong>
+      <small>{제약 1} · {제약 2} · {제약 3}</small>
+    </div>
+  </div>
+</section>
+
+<!-- 08 결과 (숫자) ----------------------------------------- -->
+<section class="slide one">
+  <div class="copy"><h2>적용 뒤 <span class="accent">{바뀐 수치}</span></h2></div>
+  <div style="display:grid;grid-template-columns:.7fr 1.3fr;gap:24px;align-items:stretch">
+    <div style="display:grid;grid-template-rows:1fr 1fr;gap:12px" class="fade">
+      <figure class="frame"><img src="{data:image/png;base64,...}" alt="적용 전"><figcaption>Before</figcaption></figure>
+      <figure class="frame"><img src="{data:image/png;base64,...}" alt="적용 후"><figcaption>After</figcaption></figure>
+    </div>
+    <div class="hero">
+      <div class="stat"><span>{전}</span><i>→</i><strong>{후}</strong></div>
+      <p>{무엇이 무엇으로 바뀌었는지}</p>
+      <div class="breakdown"><span>{항목 n→m}</span><span>{항목 n→m}</span><span>{항목 n→m}</span><span>{항목 n→m}</span></div>
+      <div class="band"><span>{남은 것}</span><b>{0}</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- 09 관계 (벤다이어그램) --------------------------------- -->
+<section class="slide one">
+  <div class="copy">
+    <h2>{A}와 {B}의 <span class="accent">관계</span></h2>
+    <p class="body">{둘이 대체 관계가 아님을 밝히는 한 문장.}</p>
+  </div>
+  <div>
+    <div class="venn">
+      <svg viewBox="0 0 620 360" role="img" aria-label="{A}와 {B}의 관계">
+        <defs><clipPath id="venn-clip"><circle cx="245" cy="180" r="150"/></clipPath></defs>
+        <circle cx="245" cy="180" r="150" fill="#fff"/>
+        <circle cx="375" cy="180" r="150" fill="#fff"/>
+        <g clip-path="url(#venn-clip)"><circle cx="375" cy="180" r="150" fill="#ffd1da"/></g>
+        <circle cx="245" cy="180" r="150" fill="none" stroke="#222222" stroke-width="1.5"/>
+        <circle cx="375" cy="180" r="150" fill="none" stroke="#222222" stroke-width="1.5"/>
+      </svg>
+      <p class="v-l"><b>{A}</b><span>{A에만 있는 것}<br>{그래서 생기는 일}</span></p>
+      <p class="v-c"><b>겹치는 곳</b><span>{교집합의 이름}<br>{여기서 벌어지는 일}</span></p>
+      <p class="v-r"><b>{B}</b><span>{B에만 있는 것}<br>{그래서 생기는 일}</span></p>
+    </div>
+    <div class="band" style="display:block;text-align:center">{어디를 봐야 하는지 한 줄.}</div>
+  </div>
+</section>
+
+<!-- 10 마무리 ---------------------------------------------- -->
+<section class="slide two dense">
+  <div class="copy">
+    <h1>오늘의 <span class="accent">정리</span></h1>
+    <p class="body">{AI가 하는 일과 사람이 하는 일의 경계 한 문장.}</p>
+    <p class="close"><span>{마지막 한 줄 — 핵심 메시지 그대로.}</span></p>
+  </div>
+  <div class="duo">
+    <div class="card" style="min-height:285px;background:var(--soft);border-color:var(--soft)">
+      <h3 style="padding-bottom:14px;border-bottom:1px solid var(--line)">{할 수 있는 것}</h3>
+      <p style="font-size:17px;line-height:1.75">{한 줄},<br>{한 줄},<br>{한 줄}</p>
+    </div>
+    <div class="card" style="min-height:285px">
+      <h3 style="padding-bottom:14px;border-bottom:1px solid var(--line)">{따로 고민할 것}</h3>
+      <p style="font-size:17px;line-height:1.75">{한 줄},<br>{한 줄},<br>{한 줄}</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="progress"><i id="bar"></i></div>
+  <div class="tools">
+    <button id="edit" class="edit-btn" title="클릭해서 글자 고치기 (E)">편집</button>
+    <button id="save" class="edit-btn" hidden>저장</button>
+    <button id="reset" class="edit-btn" hidden>원래대로</button>
+    <span class="edit-note" id="note"></span>
+  </div>
+  <span class="hint">← → · SPACE</span>
+  <div class="nav">
+    <button id="prev" aria-label="이전">←</button>
+    <button id="next" aria-label="다음">→</button>
+  </div>
+</footer>
+</main>
+
+<script>
+const s=[...document.querySelectorAll('.slide')],
+      c=document.getElementById('current'),
+      t=document.getElementById('total'),
+      b=document.getElementById('bar'),
+      p=document.getElementById('prev'),
+      n=document.getElementById('next');
+let i=0;
+t.textContent=String(s.length).padStart(2,'0');
+function show(x){
+  i=Math.max(0,Math.min(s.length-1,x));
+  s.forEach((v,k)=>v.classList.toggle('active',k===i));
+  c.textContent=String(i+1).padStart(2,'0');
+  b.style.width=((i+1)/s.length*100)+'%';
+  p.disabled=i===0; n.disabled=i===s.length-1;
+  s[i].scrollTop=0;                                  /* 모바일에서 스크롤한 장을 넘기면 맨 위부터 */
+}
+p.onclick=()=>show(i-1); n.onclick=()=>show(i+1);
+addEventListener('keydown',e=>{
+  if(e.target.isContentEditable)return;
+  if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();show(i+1)}
+  if(['ArrowLeft','PageUp'].includes(e.key))show(i-1);
+});
+show(0);
+
+/* 모바일 스와이프 — 좌우로 밀면 장이 넘어간다. 세로 스크롤·짧은 탭·편집 중에는 동작하지 않는다 */
+(function(){
+  let x0=null,y0=0,t0=0;
+  addEventListener('touchstart',e=>{
+    if(e.touches.length!==1||e.target.isContentEditable||document.body.classList.contains('editing')){x0=null;return}
+    x0=e.touches[0].clientX; y0=e.touches[0].clientY; t0=Date.now();
+  },{passive:true});
+  addEventListener('touchend',e=>{
+    if(x0===null)return;
+    const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0; x0=null;
+    if(Math.abs(dx)<50||Math.abs(dx)<Math.abs(dy)*1.5||Date.now()-t0>800)return;
+    show(i+(dx<0?1:-1));
+  },{passive:true});
+})();
+
+/* 화면 배율 — [ 축소 · ] 확대 · \ 원래대로. 화면에는 아무 표시도 하지 않는다.
+   슬라이드만 scale 하므로 헤더·푸터·진행 막대는 제자리에 남는다. */
+const ZK='deck-zoom:'+location.pathname;
+let z=1;
+try{const v=parseFloat(localStorage.getItem(ZK)); if(v)z=v}catch(e){}
+function zoom(v){
+  z=Math.min(2,Math.max(.5,Math.round(v*20)/20));
+  document.documentElement.style.setProperty('--zoom',z);
+  try{localStorage.setItem(ZK,z)}catch(e){}
+}
+zoom(z);
+addEventListener('keydown',e=>{
+  if(e.target.isContentEditable||e.metaKey||e.ctrlKey||e.altKey)return;
+  const k=e.code||'';                                  /* 한글 입력 상태에서도 code 는 그대로다 */
+  if(e.key==='['||k==='BracketLeft'){e.preventDefault();zoom(z-.05)}
+  else if(e.key===']'||k==='BracketRight'){e.preventDefault();zoom(z+.05)}
+  else if(e.key==='\\'||e.key==='\u20a9'||k==='Backslash'){e.preventDefault();zoom(1)}
+});
+</script>
+
+<script>
+/* 인라인 편집 — 클릭해서 글자만 고친다 (구조는 건드리지 않는다)
+   E(한글 ㄷ) 또는 [편집] 으로 켠다 · [저장] / ⌘S 는 이 HTML 파일을 그대로 덮어쓴다
+   파일은 처음 한 번만 고르면 되고, 그 뒤로는 묻지 않고 덮어쓴다 */
+(function(){
+  const SEL='.slide h1,.slide h2,.slide h3,.slide p,.slide small,.slide figcaption,'
+           +'.slide .link,.slide .band,.flow span,.flow strong,.steps>div,.pairs>div,'
+           +'.breakdown span,.stat,.prompt';
+  const all=[...document.querySelectorAll(SEL)];
+  const nodes=all.filter(el=>!all.some(o=>o!==el&&o.contains(el)));
+  if(!nodes.length)return;
+  nodes.forEach((el,i)=>el.dataset.edit=i);
+
+  const FILE=decodeURIComponent(location.pathname.split('/').pop()||'deck.html');
+  const KEY='maro-ppt:'+location.pathname;
+  const origin=nodes.map(el=>el.innerHTML);
+  const PT=(()=>{const d=document.createElement('div');
+    d.setAttribute('contenteditable','plaintext-only');
+    return d.contentEditable==='plaintext-only'})();
+  const bEdit=document.getElementById('edit'),
+        bSave=document.getElementById('save'),
+        bReset=document.getElementById('reset'),
+        note=document.getElementById('note');
+  const FSA=!!window.showSaveFilePicker;
+  let on=false, handle=null, asked=false;
+
+  try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');
+      for(const k in s) if(nodes[k]) nodes[k].innerHTML=s[k];}catch(e){}
+
+  function say(t,ms){
+    if(!note)return;
+    note.textContent=t;
+    if(ms)setTimeout(()=>{if(note.textContent===t)note.textContent=''},ms);
+  }
+  function store(){
+    const d={};
+    nodes.forEach((el,i)=>{if(el.innerHTML!==origin[i])d[i]=el.innerHTML});
+    try{localStorage.setItem(KEY,JSON.stringify(d))}catch(e){}
+  }
+  function mode(v){
+    on=v; document.body.classList.toggle('editing',on);
+    nodes.forEach(el=>on?el.setAttribute('contenteditable',PT?'plaintext-only':'true')
+                       :el.removeAttribute('contenteditable'));
+    bEdit.textContent=on?'편집 끝':'편집';
+    bEdit.classList.toggle('on',on);
+    bSave.hidden=!on; bReset.hidden=!on;
+    if(!on){say('',0);return}
+    if(!FSA)say('이 브라우저는 덮어쓰기를 못 한다 — 저장은 내려받기로 떨어진다',6000);
+    else if(!handle&&!asked)say('저장할 때 파일을 한 번 묻는다. 이 파일을 골라 덮어쓰면 그 뒤로는 안 묻는다',7000);
+  }
+  function html(){
+    const c=document.documentElement.cloneNode(true);
+    c.querySelectorAll('[contenteditable]').forEach(e=>e.removeAttribute('contenteditable'));
+    c.querySelectorAll('[data-edit]').forEach(e=>e.removeAttribute('data-edit'));
+    c.querySelectorAll('.slide').forEach((e,i)=>e.classList.toggle('active',i===0));
+    c.querySelector('body').classList.remove('editing');
+    c.querySelectorAll('#save,#reset').forEach(e=>e.setAttribute('hidden',''));
+    const e=c.querySelector('#edit'); if(e){e.textContent='편집';e.classList.remove('on')}
+    const n=c.querySelector('#note'); if(n)n.textContent='';
+    return '<!doctype html>\n'+c.outerHTML;
+  }
+
+  /* 파일 핸들 — 한 번 고르면 IndexedDB 에 남아 다음 실행에서도 바로 덮어쓴다 */
+  const idb=()=>new Promise((ok,no)=>{
+    const r=indexedDB.open('maro-ppt',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('handle');
+    r.onsuccess=()=>ok(r.result); r.onerror=()=>no(r.error)});
+  async function recall(){
+    try{const db=await idb();
+      return await new Promise((ok,no)=>{
+        const q=db.transaction('handle').objectStore('handle').get(KEY);
+        q.onsuccess=()=>ok(q.result||null); q.onerror=()=>no(q.error)});
+    }catch(e){return null}
+  }
+  async function keep(h){
+    try{const db=await idb();
+      db.transaction('handle','readwrite').objectStore('handle').put(h,KEY)}catch(e){}
+  }
+  async function target(){
+    if(!FSA)return null;
+    if(!handle)handle=await recall();
+    if(handle){
+      const o={mode:'readwrite'};
+      let p=await handle.queryPermission(o);
+      if(p!=='granted')p=await handle.requestPermission(o);
+      if(p==='granted')return handle;
+      handle=null;
+    }
+    asked=true;
+    handle=await showSaveFilePicker({id:'maro-ppt',suggestedName:FILE,
+      types:[{description:'HTML 문서',accept:{'text/html':['.html']}}]});
+    await keep(handle);
+    return handle;
+  }
+  async function save(){
+    const text=html();
+    try{
+      const h=await target();
+      if(h){
+        const w=await h.createWritable(); await w.write(text); await w.close();
+        nodes.forEach((el,i)=>origin[i]=el.innerHTML);
+        try{localStorage.removeItem(KEY)}catch(e){}
+        bSave.textContent='저장됨'; setTimeout(()=>bSave.textContent='저장',1600);
+        say(h.name+' 덮어씀',2500);
+        return;
+      }
+    }catch(err){
+      if(err.name==='AbortError'){say('저장을 취소했다',2000);return}
+      say('덮어쓰기가 막혀 내려받기로 저장한다 ('+err.name+')',6000);
+    }
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([text],{type:'text/html'}));
+    a.download=FILE; a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  bEdit.onclick=()=>mode(!on);
+  bSave.onclick=save;
+  bReset.onclick=()=>{
+    if(!confirm('고친 내용을 모두 되돌립니다.'))return;
+    nodes.forEach((el,i)=>el.innerHTML=origin[i]);
+    try{localStorage.removeItem(KEY)}catch(e){}
+    say('되돌렸다',2000);
+  };
+  document.addEventListener('input',e=>{if(e.target.closest('[data-edit]'))store()});
+  addEventListener('keydown',e=>{
+    if(e.target.isContentEditable){
+      if((e.metaKey||e.ctrlKey)&&(e.key==='s'||e.key==='S'||e.key==='ㄴ'||e.code==='KeyS')){e.preventDefault();save()}
+      if(e.key==='Escape')e.target.blur();
+      return;
+    }
+    if((e.metaKey||e.ctrlKey)&&(e.key==='s'||e.key==='S'||e.key==='ㄴ'||e.code==='KeyS')&&on){e.preventDefault();save();return}
+    if(e.key==='e'||e.key==='E'||e.key==='ㄷ'||e.key==='ㄸ'||e.code==='KeyE'){e.preventDefault();mode(!on)}
+  });
+})();
+</script>
+</body>
+</html>
