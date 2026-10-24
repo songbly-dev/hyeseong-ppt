@@ -59,10 +59,21 @@ template: template.html
 □ 글자가 SVG <text> 가 아니라 편집 가능한 HTML 안에 있을 것
 □ 헤더 장수 자동 카운트
 □ 900px·600px 에서 1단으로 접힐 것
-□ 모바일 스와이프 + 긴 장 세로 스크롤 (SKILL.md 5-3)
+□ 모바일 스와이프 + 긴 장 세로 스크롤 (SKILL.md 5-5)
 ```
 
-`airbnb/template.html` 의 `<script>` 덩이(장 넘김·스와이프·배율, 편집)는 스타일과 무관하다. 그대로 가져다 쓴다.
+`airbnb/template.html` 의 `<script>` 네 덩이는 스타일과 무관하다. 그대로 가져다 쓴다.
+
+| 스크립트 | `data-editor` | 편집 기능 삭제 뒤 |
+|---|---|---|
+| 장 넘기기·스와이프·배율 | 없음 | 남는다 |
+| 도식 보기 (`DGV`) | 없음 | 남는다 |
+| 글자 편집·저장·편집 기능 삭제 | 있음 | 빠진다 |
+| 도식 편집 (`DG`) | 있음 | 빠진다 |
+
+편집용 CSS 도 `<style data-editor>` 로 따로 두고, 푸터 `.tools` 에도 `data-editor` 를 붙인다.
+도식 모양(`.dg-node` 색·테두리·모서리)은 스타일마다 다시 쓰되 클래스 이름(`.dg` `.dg-node` `.dg-edge` `.zone` `.ghost`)은 유지한다.
+강조 박스 클래스는 스타일의 억양색 이름을 따른다 — minimal 은 `.lime`, airbnb 는 `.rausch`.
 
 **4. 이 README 의 "등록된 스타일" 표에 한 줄 추가한다.**
 
